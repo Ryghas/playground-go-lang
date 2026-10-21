@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-pokemon}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-pokemon}"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate:v4.17.1
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-pokemon}?sslmode=disable"
+      - "up"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build: .
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      HTTP_PORT: 8080
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-pokemon}
+      DB_SSLMODE: disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

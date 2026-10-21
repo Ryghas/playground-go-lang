@@ -1,0 +1,436 @@
+basePath: /api/v1
+definitions:
+  handler.CreatePokemonRequest:
+    properties:
+      attack:
+        example: 55
+        maximum: 255
+        minimum: 1
+        type: integer
+      defense:
+        example: 40
+        maximum: 255
+        minimum: 1
+        type: integer
+      hp:
+        example: 35
+        maximum: 255
+        minimum: 1
+        type: integer
+      name:
+        example: Pikachu
+        maxLength: 50
+        minLength: 1
+        type: string
+      pokedex_number:
+        example: 25
+        minimum: 1
+        type: integer
+      primary_type:
+        enum:
+        - normal
+        - fire
+        - water
+        - grass
+        - electric
+        - ice
+        - fighting
+        - poison
+        - ground
+        - flying
+        - psychic
+        - bug
+        - rock
+        - ghost
+        - dragon
+        - dark
+        - steel
+        - fairy
+        example: electric
+        type: string
+      secondary_type:
+        enum:
+        - normal
+        - fire
+        - water
+        - grass
+        - electric
+        - ice
+        - fighting
+        - poison
+        - ground
+        - flying
+        - psychic
+        - bug
+        - rock
+        - ghost
+        - dragon
+        - dark
+        - steel
+        - fairy
+        example: fairy
+        type: string
+      speed:
+        example: 90
+        maximum: 255
+        minimum: 1
+        type: integer
+    required:
+    - attack
+    - defense
+    - hp
+    - name
+    - pokedex_number
+    - primary_type
+    - speed
+    type: object
+  handler.PokemonResponse:
+    properties:
+      attack:
+        example: 55
+        type: integer
+      created_at:
+        example: "2026-10-21T03:47:54Z"
+        type: string
+      defense:
+        example: 40
+        type: integer
+      hp:
+        example: 35
+        type: integer
+      id:
+        example: 3f1c2b7e-8a4d-4c39-9f0e-2d5b6a7c8e91
+        type: string
+      name:
+        example: pikachu
+        type: string
+      pokedex_number:
+        example: 25
+        type: integer
+      primary_type:
+        example: electric
+        type: string
+      secondary_type:
+        example: fairy
+        type: string
+        x-nullable: true
+      speed:
+        example: 90
+        type: integer
+      updated_at:
+        example: "2026-10-21T03:47:54Z"
+        type: string
+    type: object
+  handler.UpdatePokemonRequest:
+    properties:
+      attack:
+        example: 60
+        maximum: 255
+        minimum: 1
+        type: integer
+      defense:
+        example: 45
+        maximum: 255
+        minimum: 1
+        type: integer
+      hp:
+        example: 40
+        maximum: 255
+        minimum: 1
+        type: integer
+      name:
+        example: pikachu
+        maxLength: 50
+        minLength: 1
+        type: string
+      pokedex_number:
+        example: 25
+        minimum: 1
+        type: integer
+      primary_type:
+        example: electric
+        type: string
+      secondary_type:
+        example: ""
+        type: string
+        x-nullable: true
+      speed:
+        example: 100
+        maximum: 255
+        minimum: 1
+        type: integer
+    type: object
+  pagination.Meta:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.Body:
+    properties:
+      data: {}
+      error:
+        $ref: '#/definitions/response.ErrorBody'
+      meta: {}
+      success:
+        type: boolean
+    type: object
+  response.ErrorBody:
+    properties:
+      code:
+        example: NOT_FOUND
+        type: string
+      message:
+        example: pokemon tidak ditemukan
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/response.ErrorBody'
+      success:
+        example: false
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: Boilerplate REST API CRUD Pokémon (Go + Gin + GORM + PostgreSQL, Clean
+    Architecture).
+  title: Pokemon Service API
+  version: "1.0"
+paths:
+  /pokemons:
+    get:
+      description: Daftar pokemon dengan pagination, filter tipe, dan pencarian nama
+        (case-insensitive). Diurutkan berdasarkan pokedex_number.
+      parameters:
+      - default: 1
+        description: Nomor halaman
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: Jumlah item per halaman
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      - description: Filter tipe (primary atau secondary)
+        enum:
+        - normal
+        - fire
+        - water
+        - grass
+        - electric
+        - ice
+        - fighting
+        - poison
+        - ground
+        - flying
+        - psychic
+        - bug
+        - rock
+        - ghost
+        - dragon
+        - dark
+        - steel
+        - fairy
+        in: query
+        name: type
+        type: string
+      - description: Cari berdasarkan nama
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/handler.PokemonResponse'
+                  type: array
+                meta:
+                  $ref: '#/definitions/pagination.Meta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: List pokemon
+      tags:
+      - pokemons
+    post:
+      consumes:
+      - application/json
+      description: Nama disimpan lowercase. Nama dan pokedex_number harus unik. secondary_type
+        tidak boleh sama dengan primary_type.
+      parameters:
+      - description: Data pokemon
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.CreatePokemonRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PokemonResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Tambah pokemon
+      tags:
+      - pokemons
+  /pokemons/{id}:
+    delete:
+      description: Soft delete. Nama dan pokedex_number bisa dipakai lagi setelah
+        dihapus.
+      parameters:
+      - description: Pokemon ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Hapus pokemon
+      tags:
+      - pokemons
+    get:
+      parameters:
+      - description: Pokemon ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PokemonResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Detail pokemon
+      tags:
+      - pokemons
+    patch:
+      consumes:
+      - application/json
+      description: 'Partial update: hanya field yang dikirim yang diubah. Kirim "secondary_type":
+        "" untuk menghapus secondary type.'
+      parameters:
+      - description: Pokemon ID (UUID)
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Field yang diubah
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.UpdatePokemonRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Body'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.PokemonResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Update sebagian data pokemon
+      tags:
+      - pokemons
+schemes:
+- http
+- https
+swagger: "2.0"
