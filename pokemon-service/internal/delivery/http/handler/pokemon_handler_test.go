@@ -21,7 +21,7 @@ import (
 
 const validID = "11111111-1111-1111-1111-111111111111"
 
-// fakePokemonUseCase — stub domainUC.PokemonUseCase; tiap method bisa di-override per test.
+// fakePokemonUseCase - stub domainUC.PokemonUseCase; tiap method bisa di-override per test.
 type fakePokemonUseCase struct {
 	getByID func(ctx context.Context, id string) (*entity.Pokemon, error)
 	getAll  func(ctx context.Context, f repository.PokemonFilter) ([]*entity.Pokemon, int64, error)

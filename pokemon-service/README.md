@@ -163,8 +163,8 @@ Base URL: `http://localhost:8080/api/v1`
 |---|---|---|
 | `page` | `1` | Minimal 1 |
 | `page_size` | `10` | 1–100 |
-| `type` | — | Cocokkan dengan `primary_type` **atau** `secondary_type` |
-| `search` | — | Cari nama (case-insensitive, partial match) |
+| `type` | - | Cocokkan dengan `primary_type` **atau** `secondary_type` |
+| `search` | - | Cari nama (case-insensitive, partial match) |
 
 **Body create/update:**
 

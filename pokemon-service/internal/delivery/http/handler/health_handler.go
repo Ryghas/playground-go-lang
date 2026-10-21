@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// HealthChecker — dependency eksternal yang dicek oleh readiness probe (misalnya database).
+// HealthChecker - dependency eksternal yang dicek oleh readiness probe (misalnya database).
 type HealthChecker interface {
 	Ping(ctx context.Context) error
 }
@@ -29,12 +29,12 @@ func (h *HealthHandler) Register(r gin.IRoutes) {
 	r.GET("/health", h.Ready)
 }
 
-// Live — proses hidup dan bisa melayani HTTP. Tidak mengecek dependency.
+// Live - proses hidup dan bisa melayani HTTP. Tidak mengecek dependency.
 func (h *HealthHandler) Live(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// Ready — siap menerima traffic: database bisa dihubungi.
+// Ready - siap menerima traffic: database bisa dihubungi.
 func (h *HealthHandler) Ready(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), h.timeout)
 	defer cancel()

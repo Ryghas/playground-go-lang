@@ -26,7 +26,7 @@ type CreatePokemonRequest struct {
 	Speed         int
 }
 
-// UpdatePokemonRequest — field nil artinya tidak diubah (partial update).
+// UpdatePokemonRequest - field nil artinya tidak diubah (partial update).
 type UpdatePokemonRequest struct {
 	PokedexNumber *int
 	Name          *string
