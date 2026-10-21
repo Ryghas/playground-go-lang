@@ -8,7 +8,7 @@ import (
 	domainUC "pokemon-service/internal/domain/usecase"
 )
 
-// CreatePokemonRequest — body untuk POST /pokemons.
+// CreatePokemonRequest - body untuk POST /pokemons.
 type CreatePokemonRequest struct {
 	PokedexNumber int     `json:"pokedex_number" binding:"required,min=1" example:"25"`
 	Name          string  `json:"name" binding:"required,min=1,max=50" example:"Pikachu"`
@@ -37,7 +37,7 @@ func (r CreatePokemonRequest) toUseCase() domainUC.CreatePokemonRequest {
 	return req
 }
 
-// UpdatePokemonRequest — semua field opsional (PATCH).
+// UpdatePokemonRequest - semua field opsional (PATCH).
 // Kirim "secondary_type": "" untuk menghapus secondary type.
 type UpdatePokemonRequest struct {
 	PokedexNumber *int    `json:"pokedex_number" binding:"omitempty,min=1" example:"25"`
@@ -74,7 +74,7 @@ func (r UpdatePokemonRequest) toUseCase() domainUC.UpdatePokemonRequest {
 	return req
 }
 
-// PokemonResponse — representasi pokemon di response HTTP.
+// PokemonResponse - representasi pokemon di response HTTP.
 // Dipisah dari entity agar tag dokumentasi tidak bocor ke domain layer.
 type PokemonResponse struct {
 	ID            string    `json:"id" example:"3f1c2b7e-8a4d-4c39-9f0e-2d5b6a7c8e91"`

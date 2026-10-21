@@ -12,7 +12,7 @@ import (
 	apperrors "pokemon-service/pkg/errors"
 )
 
-// fakePokemonRepo — implementasi in-memory dari repository.PokemonRepository.
+// fakePokemonRepo - implementasi in-memory dari repository.PokemonRepository.
 type fakePokemonRepo struct {
 	data       map[string]*entity.Pokemon
 	lastFilter repository.PokemonFilter

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Body — format response standar untuk semua endpoint.
+// Body - format response standar untuk semua endpoint.
 type Body struct {
 	Success bool       `json:"success"`
 	Data    any        `json:"data,omitempty"`
@@ -21,7 +21,7 @@ type ErrorBody struct {
 	Message string `json:"message" example:"pokemon tidak ditemukan"`
 }
 
-// ErrorResponse — bentuk response error; dipakai untuk dokumentasi Swagger.
+// ErrorResponse - bentuk response error; dipakai untuk dokumentasi Swagger.
 type ErrorResponse struct {
 	Success bool      `json:"success" example:"false"`
 	Error   ErrorBody `json:"error"`

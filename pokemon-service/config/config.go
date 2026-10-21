@@ -11,7 +11,7 @@ type Config struct {
 	AppEnv   string
 	HTTPPort string
 	LogLevel string
-	// SwaggerEnabled — default aktif kecuali APP_ENV=production.
+	// SwaggerEnabled - default aktif kecuali APP_ENV=production.
 	SwaggerEnabled bool
 	Database       DatabaseConfig
 }

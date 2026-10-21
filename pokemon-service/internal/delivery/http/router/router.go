@@ -15,7 +15,12 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func New(cfg *config.Config, log *slog.Logger, pokemonUC domainUC.PokemonUseCase) *gin.Engine {
+func New(
+	cfg *config.Config,
+	log *slog.Logger,
+	pokemonUC domainUC.PokemonUseCase,
+	dbChecker handler.HealthChecker,
+) *gin.Engine {
 	if cfg.AppEnv == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -23,9 +28,7 @@ func New(cfg *config.Config, log *slog.Logger, pokemonUC domainUC.PokemonUseCase
 	r := gin.New()
 	r.Use(gin.Recovery(), middleware.RequestLogger(log))
 
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	handler.NewHealthHandler(dbChecker).Register(r)
 
 	if cfg.SwaggerEnabled {
 		// Host dikosongkan agar "Try it out" memakai host tempat UI dibuka.

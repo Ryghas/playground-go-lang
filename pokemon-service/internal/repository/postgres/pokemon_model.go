@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// pokemonModel — representasi tabel `pokemons`. Sengaja dipisah dari entity
+// pokemonModel - representasi tabel `pokemons`. Sengaja dipisah dari entity
 // agar domain layer tidak bergantung pada tag/tipe GORM.
 type pokemonModel struct {
 	ID            string `gorm:"type:uuid;primaryKey"`
