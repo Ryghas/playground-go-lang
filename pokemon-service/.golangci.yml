@@ -1,0 +1,21 @@
+version: "2"
+
+run:
+  timeout: 5m
+  build-tags:
+    - integration
+
+linters:
+  # default: errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose
+    - errorlint
+    - nolintlint
+    - unconvert
+
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    paths:
+      - docs

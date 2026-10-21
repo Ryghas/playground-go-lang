@@ -6,7 +6,7 @@ DB_PASSWORD ?= postgres
 DB_NAME     ?= pokemon
 DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@postgres:5432/$(DB_NAME)?sslmode=disable
 
-.PHONY: tidy swag run build test cover db-up migrate-up migrate-down seed up down logs
+.PHONY: tidy swag run build test test-integration lint cover db-up migrate-up migrate-down seed up down logs
 
 tidy:
 	go mod tidy
@@ -27,6 +27,16 @@ build:
 
 test:
 	go test ./... -race -count=1
+
+# Integration test repository ke Postgres sungguhan (butuh `make db-up`).
+# Tiap test memakai schema sementara, jadi data di database tidak tersentuh.
+TEST_DATABASE_DSN ?= host=localhost port=5432 user=$(DB_USER) password=$(DB_PASSWORD) dbname=$(DB_NAME) sslmode=disable
+
+test-integration:
+	TEST_DATABASE_DSN="$(TEST_DATABASE_DSN)" go test -tags=integration ./internal/repository/... -race -count=1
+
+lint:
+	golangci-lint run ./...
 
 cover:
 	go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out

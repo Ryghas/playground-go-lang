@@ -44,7 +44,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.HTTPPort,
-		Handler:           router.New(cfg, log, pokemonUC),
+		Handler:           router.New(cfg, log, pokemonUC, postgresRepo.NewHealthChecker(db)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,

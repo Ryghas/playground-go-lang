@@ -1,6 +1,6 @@
 # pokemon-service
 
-Boilerplate REST API CRUD (contoh: Pokémon) dengan **Go + Gin + GORM + PostgreSQL**, mengikuti Clean Architecture. Dilengkapi Swagger UI, migration, seed data, Docker Compose, dan unit test.
+Boilerplate REST API CRUD (contoh: Pokémon) dengan **Go + Gin + GORM + PostgreSQL**, mengikuti Clean Architecture. Dilengkapi Swagger UI, health check liveness/readiness, migration, seed data, Docker Compose, unit & integration test, serta CI GitHub Actions.
 
 ## Daftar Isi
 
@@ -16,6 +16,7 @@ Boilerplate REST API CRUD (contoh: Pokémon) dengan **Go + Gin + GORM + PostgreS
 - [Aturan Bisnis](#aturan-bisnis)
 - [Arsitektur](#arsitektur)
 - [Testing](#testing)
+- [CI (GitHub Actions)](#ci-github-actions)
 - [Troubleshooting](#troubleshooting)
 - [Langkah Lanjut](#langkah-lanjut)
 
@@ -36,6 +37,7 @@ Boilerplate REST API CRUD (contoh: Pokémon) dengan **Go + Gin + GORM + PostgreS
 
 - **Docker Desktop**, dan pastikan statusnya *running*.
 - **Go 1.25+**, hanya diperlukan kalau app dijalankan di host atau untuk menjalankan test dan `make swag`. Di macOS: `brew install go`.
+- **golangci-lint v2** (opsional, untuk `make lint`). Di macOS: `brew install golangci-lint`.
 
 > Semua perintah di bawah dijalankan dari root folder project (`pokemon-service/`).
 
@@ -58,7 +60,7 @@ make seed
 Cek:
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8080/health/ready
 ```
 
 Buka Swagger UI: http://localhost:8080/swagger/index.html
@@ -120,7 +122,9 @@ Semua konfigurasi dibaca dari environment variable lewat [config/config.go](conf
 | `make migrate-down` | Rollback 1 migration terakhir |
 | `make run` | Jalankan app di host (`go run ./cmd`) |
 | `make build` | Build binary ke `bin/pokemon-service` |
-| `make test` | Unit test dengan race detector |
+| `make test` | Unit test (use case + handler) dengan race detector |
+| `make test-integration` | Integration test repository ke Postgres (butuh `make db-up`) |
+| `make lint` | golangci-lint |
 | `make cover` | Unit test + laporan coverage |
 | `make swag` | Generate ulang dokumentasi Swagger ke `docs/` |
 | `make tidy` | `go mod tidy` |
@@ -144,7 +148,9 @@ Base URL: `http://localhost:8080/api/v1`
 
 | Method | Path | Keterangan | Sukses |
 |---|---|---|---|
-| GET | `/health` *(tanpa prefix)* | Health check | 200 |
+| GET | `/health/live` *(tanpa prefix)* | Liveness: proses hidup, tidak cek dependency | 200 |
+| GET | `/health/ready` *(tanpa prefix)* | Readiness: ping database (timeout 2 detik) | 200 / 503 |
+| GET | `/health` *(tanpa prefix)* | Alias `/health/ready` | 200 / 503 |
 | GET | `/pokemons` | List + pagination + filter | 200 |
 | GET | `/pokemons/{id}` | Detail | 200 |
 | POST | `/pokemons` | Create | 201 |
@@ -224,6 +230,14 @@ curl -X DELETE 'http://localhost:8080/api/v1/pokemons/{id}'
 
 Tip: di terminal, tambahkan `-s ... | python3 -m json.tool` supaya JSON lebih mudah dibaca.
 
+Contoh response readiness saat database mati (`503`):
+
+```json
+{ "status": "unavailable", "checks": { "database": "down" } }
+```
+
+Gunakan `/health/live` untuk liveness probe (restart container) dan `/health/ready` untuk readiness probe (keluarkan dari load balancer), supaya DB yang sedang down tidak membuat container di-restart terus-menerus.
+
 ## Format Response & Error
 
 Sukses (list):
@@ -301,11 +315,36 @@ handler ──▶ usecase ──▶ repository (interface di domain) ◀── p
 
 ## Testing
 
+| Jenis | Lokasi | Butuh DB? | Perintah |
+|---|---|---|---|
+| Unit test use case | [pokemon_usecase_test.go](internal/usecase/pokemon_usecase_test.go) | Tidak (fake repository in-memory) | `make test` |
+| Unit test HTTP handler | [pokemon_handler_test.go](internal/delivery/http/handler/pokemon_handler_test.go), [health_handler_test.go](internal/delivery/http/handler/health_handler_test.go) | Tidak (`httptest` + fake use case) | `make test` |
+| Integration test repository | [pokemon_repository_integration_test.go](internal/repository/postgres/pokemon_repository_integration_test.go) | Ya (Postgres) | `make test-integration` |
+
+**Yang dicakup:**
+- *Use case:* validasi, conflict, not found, partial update, delete, normalisasi pagination, error wrapping.
+- *Handler:* binding & validasi request, mapping `AppError` ke status HTTP, error 500 tidak membocorkan detail internal, `secondary_type: ""` menjadi hapus, health live/ready.
+- *Repository:* query SQL sungguhan, unique index (conflict), filter type ke secondary, search case-insensitive, urutan & pagination, update ke `NULL`, soft delete, serta pemakaian ulang nama setelah dihapus.
+
+Menjalankan integration test:
+
 ```bash
-make test
+make db-up && make test-integration
 ```
 
-Unit test ada di [pokemon_usecase_test.go](internal/usecase/pokemon_usecase_test.go) dan memakai fake repository in-memory, sehingga tidak butuh database. Test mencakup create, validasi, conflict, not found, partial update, delete, normalisasi pagination, dan error wrapping.
+Integration test diberi build tag `integration`, jadi tidak ikut `make test`. Tiap test membuat **schema Postgres sementara**, menjalankan semua file di `migrations/`, lalu menghapus schema itu, sehingga data di database lokal tidak tersentuh. DSN bisa diganti lewat env `TEST_DATABASE_DSN`. Kalau env ini kosong, test di-skip.
+
+## CI (GitHub Actions)
+
+Workflow ada di [`.github/workflows/pokemon-service.yml`](../.github/workflows/pokemon-service.yml) (di root repo) dan hanya berjalan kalau ada perubahan di `pokemon-service/**`.
+
+| Job | Isi |
+|---|---|
+| `lint` | golangci-lint v2 (config di [.golangci.yml](.golangci.yml)) |
+| `test` | Unit test + race detector + coverage |
+| `integration` | Integration test repository dengan service container Postgres 16 |
+| `swagger` | Jalankan `make swag`, gagal kalau `docs/` belum di-generate ulang dan di-commit |
+| `docker` | Build image Docker (setelah `lint` dan `test` lolos) |
 
 ## Troubleshooting
 
@@ -316,11 +355,12 @@ Unit test ada di [pokemon_usecase_test.go](internal/usecase/pokemon_usecase_test
 | `Cannot connect to the Docker daemon` | Docker Desktop belum jalan. Buka dan tunggu sampai statusnya *running*. |
 | Perubahan Swagger tidak muncul | Jalankan `make swag`, lalu rebuild app: `docker compose up -d --build app`. |
 | Port 5432 / 8080 sudah dipakai | Hentikan service lain di port tersebut, atau ubah mapping `ports` di [docker-compose.yml](docker-compose.yml). |
+| `make test-integration` gagal `connection refused` | Postgres belum jalan. Jalankan `make db-up` dulu. |
+| Job CI `swagger` gagal | Anotasi atau DTO berubah tapi `docs/` belum di-update. Jalankan `make swag`, lalu commit. |
 | `go: command not found` | Install Go (`brew install go`), atau pakai Opsi A yang semuanya di Docker. |
 
 ## Langkah Lanjut
 
 - Cache Redis di use case (interface `PokemonCache`, implementasi di `internal/repository/redis`).
-- Integration test repository dengan testcontainers-go.
 - Middleware auth (JWT) dan rate limit.
-- CI (GitHub Actions): lint, test, dan cek `docs/` sudah ter-generate.
+- Deploy otomatis (push image ke registry) dari CI.
